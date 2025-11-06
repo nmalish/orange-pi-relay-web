@@ -18,16 +18,26 @@ class GPIO:
                 f.write(str(self.pin))
             time.sleep(0.1)
         
-        # Set as output
+        # Start with pin floating (input mode)
         with open(f'{self.path}/direction', 'w') as f:
-            f.write('out')
+            f.write('in')
     
     def write(self, value):
-        with open(f'{self.path}/value', 'w') as f:
-            f.write(str(value))
+        if value:
+            # ON: Set as output and pull to ground (0V)
+            with open(f'{self.path}/direction', 'w') as f:
+                f.write('out')
+            with open(f'{self.path}/value', 'w') as f:
+                f.write('0')
+        else:
+            # OFF: Set as input (floating/high impedance)
+            with open(f'{self.path}/direction', 'w') as f:
+                f.write('in')
     
     def cleanup(self):
         try:
+            # Set to floating state before cleanup
+            self.write(0)
             with open('/sys/class/gpio/unexport', 'w') as f:
                 f.write(str(self.pin))
         except:

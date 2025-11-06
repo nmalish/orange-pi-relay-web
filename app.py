@@ -23,16 +23,25 @@ class GPIO:
             except:
                 pass
         
-        # Set as output
+        # Start with pin floating (input mode)
         with open(f'{self.path}/direction', 'w') as f:
-            f.write('out')
+            f.write('in')
     
     def write(self, value):
-        with open(f'{self.path}/value', 'w') as f:
-            f.write(str(value))
+        if value:
+            # ON: Set as output and pull to ground (0V)
+            with open(f'{self.path}/direction', 'w') as f:
+                f.write('out')
+            with open(f'{self.path}/value', 'w') as f:
+                f.write('0')
+        else:
+            # OFF: Set as input (floating/high impedance)
+            with open(f'{self.path}/direction', 'w') as f:
+                f.write('in')
     
     def cleanup(self):
         try:
+            # Set to floating state before cleanup
             self.write(0)
             with open('/sys/class/gpio/unexport', 'w') as f:
                 f.write(str(self.pin))
@@ -42,7 +51,7 @@ class GPIO:
 # Initialize GPIO
 relay = GPIO(GPIO_PIN)
 relay.setup()
-relay.write(0)  # Start with relay OFF
+relay.write(0)  # Start with relay OFF (floating)
 
 # Store relay state
 relay_state = False
@@ -55,6 +64,7 @@ def index():
 def toggle_relay():
     global relay_state
     relay_state = not relay_state
+    # ON = 1 (pulled to ground), OFF = 0 (floating)
     relay.write(1 if relay_state else 0)
     return jsonify({
         'success': True,
